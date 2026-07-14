@@ -1,0 +1,386 @@
+# -*- org-confirm-babel-evaluate: nil; -*-
+#+title: emacs configuration
+#+author: gramevar
+#+options: ^:nil
+#+property: header-args :eval yes :noweb yes :results none
+* bootstrap                                                       :bootstrap:
+** initialize packages db
+#+begin_src elisp
+(require 'package)
+(add-to-list 'package-archives '("gnu"   . "https://elpa.gnu.org/packages/"))
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+(package-initialize)
+#+end_src
+** install package
+#+begin_src elisp
+(defun my/package-install (pkg)
+  (unless (package-installed-p pkg)
+    (package-refresh-contents t)
+    (package-install pkg)))
+#+end_src
+** set default coding/encoding
+#+begin_src elisp
+(setopt set-language-environment "UTF-8"
+        set-default-coding-systems 'utf-8
+        default-process-coding-system '(utf-8-unix . utf-8-unix))
+#+end_src
+** indentation
+#+begin_src elisp
+(setopt tab-width 4
+        tab-always-indent 'complete
+        ;; prefer space over tabs
+        indent-tabs-mode nil)
+#+end_src
+** file structure
+#+begin_src elisp
+(setopt require-final-newline t)
+#+end_src
+** input method
+#+begin_src elisp
+(setopt default-input-method "russian-computer")
+#+end_src
+** treat all themes as safe
+#+begin_src elisp
+(setopt custom-safe-themes t)
+#+end_src
+** use tcp instead of unix socket
+#+begin_src elisp
+(when (eq system-type 'windows-nt)
+  (setopt server-use-tcp t))
+#+end_src
+** emacs directory                                                :emacs:dir:
+SCHEDULED: <2026-07-11 Sat>
+#+begin_src elisp
+(setopt user-emacs-directory
+        (cond
+         ((string= system-type "gnu/linux")
+          (format "%s/.config/emacs" (getenv "HOME")))))
+#+end_src
+** window/frame
+#+begin_src elisp
+(setopt frame-inhibit-implied-resize t)
+(add-to-list 'display-buffer-alist
+             '((or "\\*gud*" "\\*eshell*" "\\*shell*")
+               (display-buffer-at-bottom)
+               (window-height . 16)))
+#+end_src
+** completion
+#+begin_src elisp
+(setopt completion-ignore-case t
+        read-buffer-completion-ignore-case t
+        completion-styles '(flex basic partial-completion emacs22)
+        read-file-name-completion-ignore-case t)
+#+end_src
+* modifying core                                                       :core:
+** conditional font changing
+#+begin_src elisp
+(setopt font "Liberation Mono")
+(unless (member font (font-family-list))
+  (defvar font "Monospace"))
+#+end_src
+** non-interactive way to kill buffer
+#+begin_src elisp
+(defun kill-current-buffer ()
+  (interactive)
+  (kill-buffer (current-buffer)))
+#+end_src
+** load-theme, but disable others
+#+begin_src elisp
+(defun my/enable-theme-functions (_)
+  (mapc #'disable-theme (cdr custom-enabled-themes)))
+#+end_src
+** enable functions for all major modes
+#+begin_src elisp
+(defun my/after-change-major-mode ()
+  (visual-line-mode)
+  (auto-revert-mode)
+  (repeat-mode)
+  (recentf-mode)
+  (hl-line-mode))
+(my/after-change-major-mode)
+(add-hook 'after-change-major-mode-hook #'my/after-change-major-mode)
+#+end_src
+* ui customization                                                       :ui:
+** faces                                                        :faces:style:
+#+begin_src elisp
+(dolist (i '(default fixed-pitch fixed-pitch-serif shr-text variable-pitch))
+  (set-face-attribute i nil :font font :height 100))
+#+end_src
+** theme
+#+begin_src elisp
+(load-theme 'adwaita t)
+(dolist (style '(default fringe))
+  (set-face-attribute style nil
+                      :background "#000"
+                      :foreground "#777"))
+;; hl-line
+(set-face-attribute 'hl-line nil
+                    :background "#343434"
+                    :foreground "#eee")
+(set-face-attribute 'mode-line-active nil
+                    :background "#242424"
+                    :foreground "orange"
+                    :box `(:line-width -1 :color "#454545"))
+(set-face-attribute 'region nil
+                    :background "#333333")
+(set-face-attribute 'mode-line-inactive nil
+                    :background nil
+                    :foreground "#fff"
+                    :box `(:line-width -1 :color "#000"))
+(set-face-attribute 'vertical-border nil
+                    :foreground "#212121")
+;; org-src
+(dolist (style '(org-block-begin-line org-block-end-line))
+  (set-face-attribute style nil
+                      :background "#161616"
+                      :foreground "#878787"))
+(set-face-attribute 'org-block nil
+                    :background "#101010")
+#+end_src
+** misc
+#+begin_src elisp
+(setopt scroll-step 1)
+#+end_src
+** emacsclient                                                  :emacsclient:
+*** pseudo-transparency
+#+begin_src elisp
+(with-selected-frame (selected-frame)
+  (add-to-list 'default-frame-alist '(alpha-background . 92)))
+#+end_src
+* hooks
+** global
+#+begin_src elisp
+(add-hook 'before-save-hook #'delete-trailing-whitespace)
+(add-hook 'enable-theme-functions #'my/enable-theme-functions)
+#+end_src
+* keybindings
+** global
+#+begin_src elisp
+(global-set-key (kbd "C-c d") 'dired-jump)
+(global-set-key (kbd "M-u") 'upcase-dwim)
+(global-set-key (kbd "M-l") 'downcase-dwim)
+(global-set-key (kbd "M-c") 'capitalize-dwim)
+(global-set-key (kbd "M-SPC") 'toggle-input-method)
+(global-set-key (kbd "C-q") (lambda () (interactive) (org-capture nil "n")))
+(global-set-key (kbd "C-c j") (lambda () (interactive) (org-capture nil "j")))
+;; org
+(global-set-key (kbd "C-c a") 'org-agenda)
+(global-set-key (kbd "C-c c") 'org-capture)
+(global-set-key (kbd "C-c l") 'org-store-link)
+#+end_src
+* minibuffer
+#+begin_src elisp
+(let ((map minibuffer-local-map))
+  (define-key map (kbd "C-n") 'next-line-or-history-element)
+  (define-key map (kbd "C-p") 'previous-line-or-history-element))
+#+end_src
+* packages
+** calendar
+#+begin_src elisp
+(setopt calendar-week-start-day 1
+        calendar-day-name-array ["Воскресенье" "Понедельник" "Вторник" "Среда"
+                                 "Четверг" "Пятница" "Суббота"]
+        calendar-day-header-array ["Вс" "Пн" "Вт" "Ср" "Чт" "Пт" "Сб"]
+        calendar-day-abbrev-array ["Вск" "Пнд" "Втр" "Сре" "Чтв" "Птн" "Суб"]
+        calendar-month-name-array ["Январь" "Февраль" "Март" "Апрель" "Май"
+                                   "Июнь" "Июль" "Август" "Сентябрь"
+                                   "Октябрь" "Ноябрь" "Декабрь"]
+        calendar-month-abbrev-array ["Янв" "Фев" "Мар" "Апр" "Май" "Июн" "Июл" "Авг" "Сен" "Окт" "Ноя" "Дек"])
+#+end_src
+** org                                                                  :org:
+*** initial setup
+#+begin_src elisp
+(setopt org-directory "~/org/"
+        org-default-notes-file (concat org-directory "notes.org")
+        org-pretty-entities t
+        org-confirm-babel-evaluate nil
+        org-use-fast-todo-selection 'expert
+        org-use-tag-inheritance t
+        org-export-coding-system 'utf-8
+        org-cycle-separator-lines 0
+        org-return-follows-link t
+        org-startup-folded 'show5levels)
+(org-babel-do-load-languages
+   'org-babel-load-languages
+   '((shell . t)
+     (C . t)))
+#+end_src
+*** keybindings
+#+begin_src elisp
+(define-key org-mode-map (kbd "C-c S") 'org-cut-subtree)
+(define-key org-mode-map (kbd "C-c Y") 'org-copy-subtree)
+(define-key org-mode-map (kbd "C-c r") 'org-mode-restart)
+(define-key org-mode-map (kbd "C-c t") 'org-set-tags-command)
+#+end_src
+*** yank
+#+begin_src elisp
+(setopt org-yank-dnd-method 'attach)
+#+end_src
+*** clock
+#+begin_src elisp
+(setopt org-clock-persist 'history
+        org-clock-into-drawer t
+        org-clock-mode-line-timer t)
+#+end_src
+*** priority
+#+begin_src elisp
+(setopt org-priority-highest ?A
+        org-priority-default ?B
+        org-priority-lowest  ?C)
+#+end_src
+*** logging
+#+begin_src elisp
+(setopt org-log-done 'time
+        org-log-into-drawer t)
+#+end_src
+*** todo                                                               :todo:
+*** custom functions
+*** config
+#+begin_src elisp
+(setopt org-enforce-todo-dependencies t
+        org-todo-keywords
+        '((sequence "NEXT(n)" "TODO(t)" "|" "DONE(d)" "WAIT(w!)")))
+#+end_src
+*** src
+#+begin_src elisp
+(setopt org-src-window-setup 'current-window
+        org-src-preserve-indentation t
+        org-src-fontify-natively t
+        org-src-tab-acts-natively t)
+#+end_src
+*** agenda                                                           :agenda:
+#+begin_src elisp
+(setopt org-agenda-files (list "todo.org" "notes.org" "journal.org")
+        org-agenda-sorting-strategy '((agenda ts-up alpha-up)
+                                      (todo todo-state-up urgency-up effort-up)
+                                      (tags category-keep)
+                                      (search category-keep))
+        org-agenda-time-grid '((today require-timed) (000 1200 2400)
+                               ":" "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+        org-agenda-current-time-string "ᐊ┈┈┈┈┈┈┈┈ now"
+        org-agenda-custom-commands
+        '(("d" "DAY"
+           ((agenda ""
+                    ((org-agenda-overriding-header
+                      (concat "TODAY (W" (format-time-string "%V") ")"))
+                     (org-agenda-span 'day)
+                     (org-agenda-sorting-strategy
+                      '((agenda time-up priority-down category-keep)))
+                     (org-agenda-show-log t)
+                     (org-agenda-log-mode-items '(clock)))))))
+            org-agenda-todo-ignore-with-date nil
+            org-agenda-overriding-header ""
+            org-agenda-remove-tags t
+            org-agenda-prefix-format " %-12c %?-14t% s"
+            org-agenda-todo-keyword-format "%-10s"
+            org-agenda-scheduled-leaders '("📅 : " "📅 x%3d d.: ")
+            org-agenda-deadline-leaders '("! : " "! +%3d d.: " "! -%3d d.: ")
+            org-agenda-todo-ignore-deadlines nil
+            org-agenda-todo-ignore-scheduled nil
+            org-agenda-todo-ignore-timestamp nil
+            org-agenda-dim-blocked-tasks nil
+            org-agenda-span 'fortnight
+            org-agenda-compact-blocks t
+            org-agenda-todo-skip-deadline-if-done t
+            org-agenda-todo-skip-scheduled-if-done t
+            org-agenda-todo-skip-timestamp-if-done t
+            org-agenda-diary-file "~/org/diary.org"
+            org-agenda-persistent-filter t
+            org-agenda-window-setup 'current-window
+            org-agenda-insert-diary-extract-time t)
+#+end_src
+*** habit
+#+begin_src elisp
+(require 'org-habit)
+(setopt org-habit-show-habits t)
+#+end_src
+*** capture
+#+begin_src elisp
+(setopt org-capture-templates
+          `(("b" "Bookmark" plain (file "~/org/bookmark.org")
+             "- %:link :: %:description"
+             :immediate-finish t
+             :prepend t)
+            ("w" "Web Note" entry (file "~/org/inbox.org")
+             "* [[%:link][%^{Title}]] :web:\n%?"
+             :after-finalize org-align-tags
+             :before-finalize org-id-get-create)
+            ("n" "Note" entry (file "~/org/inbox.org")
+             "* ^{Title} :note:\n%?"
+             :before-finalize org-id-get-create)
+            ("j" "Journal Entry" entry (file+olp+datetree "~/org/journal.org")
+             "* %<%H:%M:%S>\n%?\n")
+            ("t" "Todo" entry (file "~/org/todo.org")
+             "* NEXT [#B] %?\n%a\n"
+             :prepend t
+             :clock-in t
+             )
+            ))
+#+end_src
+*** id
+#+begin_src elisp
+(setopt org-id-link-to-org-use-id 'create-if-interactive-and-no-custom-id
+        org-id-method 'org
+        org-id-link-consider-parent-id t)
+#+end_src
+*** treat
+#+begin_src elisp
+(setopt org-treat-S-cursor-todo-selection-as-state-change nil
+        org-treat-insert-todo-heading-as-state-change nil)
+#+end_src
+*** org-protocol
+**** config
+#+begin_src elisp
+(require 'org-protocol)
+#+end_src
+**** linux system setup
+#+begin_example :tangle ~/.local/share/applications/org-protocol.desktop
+[Desktop Entry]
+Name=org-protocol
+Comment=org-protocol
+Categories=Other;
+Keywords=org-protocol;
+Icon=emacs
+Type=Application
+Exec=emacsclient -- "%u"
+Terminal=false
+StartupWMClass=Emacs
+MimeType=x-scheme-handler/org-protocol;
+#+end_example
+Update the cache database of MIME Types:
+#+begin_example sh
+update-desktop-database ~/.local/share/applications/
+#+end_example
+****
+** dired
+*** keybindings
+#+begin_src elisp
+(when (< emacs-major-version 28) (require 'dired-x))
+#+end_src
+*** config
+#+begin_src elisp
+(defun my/dired-init ()
+  (dired-hide-details-mode 1))
+(add-hook 'dired-mode-hook #'my/dired-init)
+(setopt dired-dwim-target t
+        dired-listing-switches "-alh")
+#+end_src
+** eshell                                                            :eshell:
+*** keybindings
+#+begin_src elisp
+(global-set-key (kbd "C-x e") 'eshell)
+#+end_src
+*** config
+#+begin_src elisp
+(add-hook 'eshell-exit-hook #'delete-window)
+(setopt eshell-banner-message "")
+#+end_src
+* references                                                :refs:references:
+- [[https://www.masteringemacs.org/article/mastering-key-bindings-emacs][Mastering Key Bindings in Emacs - Mastering Emacs]]
+- [[https://stackoverflow.com/questions/59682728/how-to-create-emacs-key-bindings-for-interactive-org-mode-functions-org-mode-c][https://stackoverflow.com/a/59698884]]
+- [[https://stackoverflow.com/questions/2858097/customizing-dired]]
+- http://xahlee.info/emacs/emacs/emacs_dired_tips.html
+- https://stackoverflow.com/a/19759051
+- https://www.reddit.com/r/emacs/comments/179t67l/comment/k58ixbg/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+- [[https://macowners.club/posts/personal-touch-org-agenda/][A Personal Touch in my Org Agenda | macOS & (open-source) Software]]
+- [[https://www.emacswiki.org/emacs/CalendarLocalization][EmacsWiki: Calendar Localization]]
