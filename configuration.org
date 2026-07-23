@@ -375,6 +375,14 @@ update-desktop-database ~/.local/share/applications/
 (add-hook 'eshell-exit-hook #'delete-window)
 (setopt eshell-banner-message "")
 #+end_src
+* programming language specific                            :prog:programming:
+** prerequisites
+#+begin_src elisp
+(require 'tempo)
+(auto-insert-mode 1)
+(setopt tempo-interactive t
+        auto-insert-query nil)
+#+end_src
 * references                                                :refs:references:
 - [[https://www.masteringemacs.org/article/mastering-key-bindings-emacs][Mastering Key Bindings in Emacs - Mastering Emacs]]
 - [[https://stackoverflow.com/questions/59682728/how-to-create-emacs-key-bindings-for-interactive-org-mode-functions-org-mode-c][https://stackoverflow.com/a/59698884]]
