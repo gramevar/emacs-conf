@@ -175,6 +175,12 @@ SCHEDULED: <2026-07-11 Sat>
   (define-key map (kbd "C-p") 'previous-line-or-history-element))
 #+end_src
 * packages
+** go-mode
+#+begin_src elisp
+(my/package-install 'go-mode)
+(my/package-install 'go-ts-mode)
+(my/package-install 'ob-go)
+#+end_src
 ** calendar
 #+begin_src elisp
 (setopt calendar-week-start-day 1
@@ -382,6 +388,13 @@ update-desktop-database ~/.local/share/applications/
 (auto-insert-mode 1)
 (setopt tempo-interactive t
         auto-insert-query nil)
+#+end_src
+** golang
+#+begin_src elisp
+(add-hook 'go-mode-hook
+          (lambda ()
+            (setq-local compile-command
+                        "go build .")))
 #+end_src
 * references                                                :refs:references:
 - [[https://www.masteringemacs.org/article/mastering-key-bindings-emacs][Mastering Key Bindings in Emacs - Mastering Emacs]]
