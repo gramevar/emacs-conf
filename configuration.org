@@ -185,7 +185,9 @@
 #+end_src
 *** framefont
 #+begin_src elisp
-(add-to-list 'default-frame-alist '(font . "Roboto Mono Nerd Font-9:antialias=none"))
+(if (string= system-type "gnu-linux")
+    (add-to-list 'default-frame-alist '(font . "Roboto Mono Nerd Font-9:antialias=none"))
+  (add-to-list 'default-frame-alist '(font . "Monospace-9:antialias=none")))
 #+end_src
 * hooks
 ** global
